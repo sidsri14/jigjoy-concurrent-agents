@@ -53,4 +53,29 @@ describe("JigJoy Concurrent Agent Mesh Suite", () => {
     assert.strictEqual(mesh.state.verifiedInvariants[1].passed, false);
     assert.strictEqual(mesh.state.isHalted, true);
   });
+
+  test("processes burst concurrent events with sub-millisecond per-event latency", () => {
+    const producerId = mesh.sensorAgent.getId();
+    const eventCount = 100;
+    const start = performance.now();
+
+    for (let i = 0; i < eventCount; i++) {
+      const event = SemanticEvent.create(
+        "mesh.invariant_check",
+        producerId,
+        {
+          rule: `BenchmarkRule_${i}`,
+          value: i,
+          threshold: i + 10,
+        }
+      );
+      sendEvent(event, producerId);
+    }
+
+    const elapsedMs = performance.now() - start;
+    const latencyPerEventMs = elapsedMs / eventCount;
+
+    assert.strictEqual(mesh.state.verifiedInvariants.length, 2 + eventCount);
+    assert.ok(latencyPerEventMs < 1.0, `Expected <1.0ms per event, got ${latencyPerEventMs}ms`);
+  });
 });
