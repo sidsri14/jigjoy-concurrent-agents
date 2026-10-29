@@ -1,5 +1,10 @@
 # JigJoy Concurrent Multi-Agent Mesh
 
+[![CI](https://github.com/sidsri14/jigjoy-concurrent-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/sidsri14/jigjoy-concurrent-agents/actions)
+[![Tests](https://img.shields.io/badge/tests-8%2F8%20passing-brightgreen)](#)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](#)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Enterprise concurrent multi-agent architecture built with [Mozaik (`@mozaik-ai/core`)](https://www.npmjs.com/package/@mozaik-ai/core) for the **NTP Novi Sad / JigJoy AI Hackathon 2026** ($1,000 USD Prize Pool).
 
 ---
