@@ -1,7 +1,7 @@
 # JigJoy Concurrent Multi-Agent Mesh
 
 [![CI](https://github.com/sidsri14/jigjoy-concurrent-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/sidsri14/jigjoy-concurrent-agents/actions)
-[![Tests](https://img.shields.io/badge/tests-8%2F8%20passing-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-11%2F11%20passing-brightgreen)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
