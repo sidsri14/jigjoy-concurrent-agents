@@ -2,6 +2,7 @@ import http from "node:http";
 import { SemanticEvent } from "@mozaik-ai/core";
 import { bootstrapMesh } from "./index.js";
 import { sendEvent } from "./runtime.js";
+import { EinsteinMatchmakerPipeline } from "./einstein-matchmaker.js";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3456;
 
@@ -40,6 +41,15 @@ export function createMeshServer() {
           telemetryCount: mesh.state.telemetryLog.length,
         })
       );
+      return;
+    }
+
+    // 1.1 API: EINSTEIN Proposals & Critic Trace
+    if (url.pathname === "/api/proposals" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      const pipeline = new EinsteinMatchmakerPipeline();
+      const result = pipeline.runFullPipeline();
+      res.end(JSON.stringify(result));
       return;
     }
 
@@ -141,6 +151,20 @@ export function createMeshServer() {
                 count,
                 durationMs: durationMs.toFixed(2),
                 perEventMs: (durationMs / count).toFixed(4),
+              })
+            );
+            return;
+          } else if (action === "run_matchmaker") {
+            const pipeline = new EinsteinMatchmakerPipeline();
+            const result = pipeline.runFullPipeline();
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify({
+                success: true,
+                count: result.proposals.length,
+                proposals: result.proposals,
+                reviews: result.reviews,
+                traceLogs: result.traceLogs,
               })
             );
             return;
@@ -332,6 +356,26 @@ function renderDashboardHtml(): string {
         Ready for benchmark run.
       </div>
     </div>
+
+    <!-- Card 5: EINSTEIN Matchmaker & Critic Evaluation -->
+    <div class="card" style="grid-column: 1 / -1;">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>🎓 Track 2: EINSTEIN Academic-Industry Matchmaker & Adversarial Critic Trace</span>
+        <button onclick="runMatchmaker()">▶ Re-evaluate Pipeline</button>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+        Evaluates researcher capabilities, generates collaboration proposals, and executes adversarial Critic review with intervention logging:
+      </p>
+      <div id="proposals-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 14px;">
+        <p style="color: var(--text-muted);">Loading proposals...</p>
+      </div>
+      <div style="background: #0b1120; border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
+        <div style="font-weight: 700; font-size: 13px; color: #f59e0b; margin-bottom: 6px;">🔍 Critic Intervention & Execution Trace:</div>
+        <div id="critic-trace-feed" style="font-family: monospace; font-size: 12px; color: #cbd5e1; max-height: 140px; overflow-y: auto;">
+          Loading trace logs...
+        </div>
+      </div>
+    </div>
   </div>
 
   <footer>
@@ -426,13 +470,86 @@ function renderDashboardHtml(): string {
     // Auto-poll state every 1.5 seconds
     setInterval(fetchState, 1500);
     fetchState();
+    fetchProposals();
+
+    async function fetchProposals() {
+      try {
+        const res = await fetch('/api/proposals');
+        const data = await res.json();
+        renderProposals(data);
+      } catch (e) {
+        console.error('Proposals fetch error:', e);
+      }
+    }
+
+    async function runMatchmaker() {
+      const grid = document.getElementById('proposals-grid');
+      const trace = document.getElementById('critic-trace-feed');
+      if (grid) grid.innerHTML = '<p style="color: var(--text-muted);">Running EINSTEIN matchmaker & adversarial critic...</p>';
+      if (trace) trace.innerHTML = 'Executing pipeline...';
+      try {
+        const res = await fetch('/api/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'run_matchmaker' })
+        });
+        const data = await res.json();
+        renderProposals(data);
+      } catch (e) {
+        console.error('Run matchmaker error:', e);
+      }
+    }
+
+    function renderProposals(data) {
+      const grid = document.getElementById('proposals-grid');
+      const trace = document.getElementById('critic-trace-feed');
+      if (!data || !data.proposals || !grid) return;
+
+      const reviewMap = {};
+      (data.reviews || []).forEach(r => {
+        reviewMap[r.proposalId] = r;
+      });
+
+      grid.innerHTML = data.proposals.map(p => {
+        const review = reviewMap[p.id];
+        const isApproved = review && review.approved;
+        const score = review ? review.overallScore : 0;
+        const statusBadge = isApproved
+          ? '<span class="badge badge-pass">CRITIC: APPROVED (' + score + '/100)</span>'
+          : '<span class="badge badge-fail">CRITIC: REVISION REQUIRED (' + score + '/100)</span>';
+
+        const milestoneList = (p.milestones || []).map(m => m.title).join(' → ');
+
+        return '<div style="background: #0f172a; border: 1px solid var(--border); border-radius: 8px; padding: 14px;">' +
+          '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px;">' +
+            '<strong style="color: #60a5fa; font-size: 14px;">' + p.title + '</strong>' +
+            statusBadge +
+          '</div>' +
+          '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">' +
+            '<div><strong>Researcher:</strong> ' + p.researcherName + ' (' + p.institution + ')</div>' +
+            '<div><strong>Company:</strong> ' + p.companyName + '</div>' +
+            '<div><strong>Domain:</strong> ' + p.targetDomain + ' • <strong>Budget:</strong> $' + Number(p.proposedBudgetUsd).toLocaleString() + ' • <strong>Duration:</strong> ' + p.timelineMonths + ' mo</div>' +
+          '</div>' +
+          '<div style="font-size: 11px; background: #1e293b; padding: 8px; border-radius: 6px; margin-bottom: 6px;">' +
+            '<strong style="color: #38bdf8;">Critic Assessment:</strong> ' + (review ? review.feedback : 'Under review') +
+          '</div>' +
+          '<div style="font-size: 11px; color: #94a3b8;">' +
+            '<strong>Milestones (' + (p.milestones ? p.milestones.length : 0) + '):</strong> ' + milestoneList +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      if (trace && data.traceLogs && data.traceLogs.length > 0) {
+        trace.innerHTML = data.traceLogs.map(l => '<div>• ' + l + '</div>').join('');
+      }
+    }
   </script>
 </body>
 </html>`;
 }
 
 // Direct execution entrypoint
-if (import.meta.url === `file://${process.argv[1]?.replace(/\\/g, "/")}`) {
+if ((process.argv[1]?.endsWith("server.ts") || process.argv[1]?.endsWith("server.js")) && !process.argv[1]?.includes(".test.")) {
   const { server } = createMeshServer();
   server.listen(PORT, () => {
     console.log(`⚡ JigJoy Concurrent Multi-Agent Mesh HUD running at: http://localhost:${PORT}`);
