@@ -1,7 +1,7 @@
 # JigJoy Concurrent Multi-Agent Mesh
 
 [![CI](https://github.com/sidsri14/jigjoy-concurrent-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/sidsri14/jigjoy-concurrent-agents/actions)
-[![Tests](https://img.shields.io/badge/tests-15%2F15%20passing-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-17%2F17%20passing-brightgreen)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -98,7 +98,7 @@ graph TD
 ## 4. Performance & Benchmarks
 
 - **Event Throughput:** ~0.026ms per event under 100-event concurrent burst load.
-- **Test Suite Execution:** **15/15 tests pass across 4 suites in ~1.5s** (`npm test`).
+- **Test Suite Execution:** **17/17 tests pass across 4 suites in ~1.6s** (`npm test`).
 - **Zero Provider Cost:** 100% offline verifiable without requiring paid LLM API keys.
 - **Automated CI:** Node.js 20.x & 22.x matrix passing in GitHub Actions.
 
@@ -113,7 +113,7 @@ npm install
 # 2. Run the live multi-agent simulation & EINSTEIN Critic pipeline
 npm start
 
-# 3. Run full automated test suite (15/15 passing)
+# 3. Run full automated test suite (17/17 passing)
 npm test
 
 # 4. Strict TypeScript typecheck
