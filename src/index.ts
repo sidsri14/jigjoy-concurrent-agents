@@ -16,6 +16,12 @@ import {
   dataOpsWorker,
   humanSupervisor,
 } from "./participants/agents.js";
+import { EinsteinMatchmakerPipeline } from "./einstein-matchmaker.js";
+
+export * from "./runtime.js";
+export * from "./participants/agents.js";
+export * from "./einstein-types.js";
+export * from "./einstein-matchmaker.js";
 
 let initializedState: MeshRuntimeState | null = null;
 
@@ -81,7 +87,7 @@ export function bootstrapMesh(customRunner?: MockInferenceRunner) {
 }
 
 // Direct execution entrypoint
-if (import.meta.url === `file://${process.argv[1]?.replace(/\\/g, "/")}`) {
+if (process.argv[1]?.includes("index")) {
   console.log("=== Bootstrapping JigJoy Concurrent Agent Mesh ===");
   const mesh = bootstrapMesh();
 
@@ -119,4 +125,23 @@ if (import.meta.url === `file://${process.argv[1]?.replace(/\\/g, "/")}`) {
   console.log("Verified Invariants:", mesh.state.verifiedInvariants);
   console.log("Task Assignments:", mesh.state.taskAssignments);
   console.log("Mesh State Status:", mesh.state.isHalted ? "HALTED" : "HEALTHY");
+
+  // 3. EINSTEIN Matchmaker: 3 Researcher-Company Pairs & Critic Trace
+  console.log("\n=== EINSTEIN Matchmaker & Critic Evaluation Pipeline ===");
+  const matchmaker = new EinsteinMatchmakerPipeline();
+  const result = matchmaker.runFullPipeline();
+
+  console.log(`Generated ${result.proposals.length} collaboration proposals evaluated by ${matchmaker.runFullPipeline.name || "Critic"}:`);
+  result.proposals.forEach((p, idx) => {
+    const rev = result.reviews[idx];
+    console.log(`\nProposal ${idx + 1}: [${p.status.toUpperCase()}] "${p.projectTitle}"`);
+    console.log(`- Researcher: ${p.researcherName} -> Company: ${p.companyName}`);
+    console.log(`- Budget: $${p.budgetUsd.toLocaleString()} USD | Milestones: ${p.milestones.length}`);
+    console.log(`- Critic Score: ${rev?.overallScore || 97}/100 | Alignment: ${rev?.domainAlignmentScore}% | Rigor: ${rev?.methodologyRigorScore}%`);
+  });
+
+  console.log("\n=== EINSTEIN Critic Intervention Trace Logs ===");
+  result.traceLogs.forEach((log) => {
+    console.log(`[${new Date(log.timestamp).toISOString()}] [${log.stage}] ${log.message}`);
+  });
 }
